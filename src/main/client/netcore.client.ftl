@@ -72,6 +72,7 @@ namespace io.fusionauth {
       return client;
     }
     [#list apis as api]
+    [#assign responseType = global.convertType(api.successResponse, "csharp")]
 
     /// <summary>
       [#list api.comments as comment]
@@ -91,7 +92,11 @@ namespace io.fusionauth {
      [#if api.deprecated??]
     [Obsolete("${api.deprecated?replace("{{renamedMethod}}",(api.renamedMethod!'')?cap_first + "Async")}")]
      [/#if]
-    public Task<ClientResponse<${global.convertType(api.successResponse, "csharp")}>> ${api.methodName?cap_first}Async(${global.methodParameters(api, "csharp")}) {
+    [#if responseType == "RESTVoid"]
+    public Task<ClientResponse> ${api.methodName?cap_first}Async(${global.methodParameters(api, "csharp")}) {      
+    [#else]
+    public Task<ClientResponse<${responseType}>> ${api.methodName?cap_first}Async(${global.methodParameters(api, "csharp")}) {
+    [/#if]
       [#assign formPost = false/]
       [#list api.params![] as param]
         [#if param.type == "form"][#assign formPost = true/][/#if]
@@ -123,7 +128,11 @@ namespace io.fusionauth {
           .withFormData(new FormUrlEncodedContent(body))
       [/#if]
           .withMethod("${api.method?cap_first}")
-          .goAsync<${global.convertType(api.successResponse, "csharp")}>();
+      [#if responseType == "RESTVoid"]
+          .goAsync();
+      [#else]
+          .goAsync<${responseType}>();
+      [/#if]
     }
 		
     /// <summary>
@@ -143,7 +152,11 @@ namespace io.fusionauth {
      [#if api.deprecated??]
     [Obsolete("${api.deprecated?replace("{{renamedMethod}}", (api.renamedMethod!'')?cap_first)}")]
      [/#if]
-    public ClientResponse<${global.convertType(api.successResponse, "csharp")}> ${api.methodName?cap_first}(${global.methodParameters(api, "csharp")}) {
+    [#if responseType == "RESTVoid"]
+    public ClientResponse ${api.methodName?cap_first}(${global.methodParameters(api, "csharp")}) {
+    [#else]
+    public ClientResponse<${responseType}> ${api.methodName?cap_first}(${global.methodParameters(api, "csharp")}) {
+    [/#if]
       return ${api.methodName?cap_first}Async(${paramNames(api)}).GetAwaiter().GetResult();
     }
     [/#list]
